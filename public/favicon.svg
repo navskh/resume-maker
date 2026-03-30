@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="7" fill="#7c3aed"/>
+  <!-- Document body -->
+  <rect x="7" y="5" width="14" height="18" rx="2" fill="white" opacity="0.95"/>
+  <!-- Text lines -->
+  <rect x="10" y="9" width="8" height="1.5" rx="0.75" fill="#7c3aed" opacity="0.4"/>
+  <rect x="10" y="12" width="8" height="1.5" rx="0.75" fill="#7c3aed" opacity="0.4"/>
+  <rect x="10" y="15" width="5" height="1.5" rx="0.75" fill="#7c3aed" opacity="0.4"/>
+  <!-- Pencil -->
+  <g transform="rotate(-40 20 20)">
+    <rect x="18" y="15" width="4" height="9" rx="0.5" fill="#fbbf24"/>
+    <polygon points="18,24 22,24 20,27.5" fill="#f59e0b"/>
+    <rect x="18" y="15" width="4" height="2.5" rx="0.5" fill="#e2e8f0"/>
+  </g>
+</svg>
