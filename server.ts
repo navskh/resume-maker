@@ -1,9 +1,51 @@
 import express from 'express'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import { skills, getSkill } from './server/skills.js'
+import { readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { execSync } from 'child_process'
+import { resolve } from 'path'
 
 const app = express()
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
+
+const DATA_FILE = resolve('./data/resume-data.json')
+
+app.get('/api/data', (_req, res) => {
+  try {
+    const raw = readFileSync(DATA_FILE, 'utf-8')
+    res.json(JSON.parse(raw))
+  } catch {
+    res.json({ questions: [], selectedQuestionId: null, globalContext: '' })
+  }
+})
+
+app.post('/api/data', (req, res) => {
+  try {
+    mkdirSync('./data', { recursive: true })
+    writeFileSync(DATA_FILE, JSON.stringify(req.body, null, 2), 'utf-8')
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : 'write failed' })
+  }
+})
+
+app.post('/api/git-push', (_req, res) => {
+  try {
+    execSync('git add data/resume-data.json', { cwd: resolve('.') })
+    const msg = `chore: backup resume data ${new Date().toLocaleString('ko-KR')}`
+    execSync(`git commit -m "${msg}"`, { cwd: resolve('.') })
+    execSync('git push', { cwd: resolve('.') })
+    res.json({ ok: true, message: 'GitHub에 백업 완료!' })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'git push failed'
+    // If nothing to commit, that's fine
+    if (msg.includes('nothing to commit')) {
+      res.json({ ok: true, message: '변경사항이 없습니다.' })
+    } else {
+      res.status(500).json({ error: msg })
+    }
+  }
+})
 
 app.get('/api/skills', (_req, res) => {
   res.json(skills.map(({ id, name, description }) => ({ id, name, description })))

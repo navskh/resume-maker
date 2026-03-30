@@ -3,7 +3,7 @@ import MarkdownReview from './components/MarkdownReview'
 import HighlightedText from './components/HighlightedText'
 import { v4 as uuidv4 } from 'uuid'
 import { AppState, Question, Version, SkillInfo, Suggestion } from './types'
-import { loadState, saveState } from './lib/storage'
+import { loadState, saveState, loadStateFromServer, saveStateToServer, gitPush } from './lib/storage'
 import { getClaudeReview, fetchSkills, fetchHighlights } from './lib/claude'
 
 export default function App() {
@@ -20,6 +20,8 @@ export default function App() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [showHighlights, setShowHighlights] = useState(false)
   const [isLoadingHighlights, setIsLoadingHighlights] = useState(false)
+  const [isPushing, setIsPushing] = useState(false)
+  const [pushMessage, setPushMessage] = useState('')
 
   const selectedQuestion = state.questions.find(q => q.id === state.selectedQuestionId) ?? null
 
@@ -37,9 +39,21 @@ export default function App() {
     setShowHighlights(false)
   }, [state.selectedQuestionId])
 
-  // Save state on change
+  // Load from server on startup (overrides localStorage if server has data)
+  useEffect(() => {
+    loadStateFromServer().then(serverState => {
+      if (serverState && serverState.questions.length > 0) {
+        setState(serverState)
+        saveState(serverState)
+      }
+    })
+  }, [])
+
+  // Save state on change (localStorage + debounced server sync)
   useEffect(() => {
     saveState(state)
+    const timer = setTimeout(() => saveStateToServer(state), 1000)
+    return () => clearTimeout(timer)
   }, [state])
 
   // Load skills
@@ -171,6 +185,15 @@ export default function App() {
     setIsLoadingHighlights(false)
   }
 
+  async function handleGitPush() {
+    setIsPushing(true)
+    setPushMessage('')
+    const result = await gitPush()
+    setIsPushing(false)
+    setPushMessage(result.message ?? result.error ?? '')
+    setTimeout(() => setPushMessage(''), 4000)
+  }
+
   function acceptSuggestion(original: string, replacement: string) {
     setEditorContent(c => c.replace(original, replacement))
     setSuggestions(prev => prev.filter(s => s.original !== original))
@@ -265,6 +288,16 @@ export default function App() {
           >
             + 문항 추가
           </button>
+          <button
+            onClick={handleGitPush}
+            disabled={isPushing}
+            className="w-full py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          >
+            {isPushing ? '백업 중...' : '☁️ GitHub 백업'}
+          </button>
+          {pushMessage && (
+            <p className="text-xs text-center text-green-600 px-2">{pushMessage}</p>
+          )}
         </div>
       </aside>
 
