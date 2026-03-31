@@ -130,6 +130,51 @@ ${content}`
   }
 })
 
+app.post('/api/wordmap', async (req: express.Request, res: express.Response) => {
+  const { word, context, globalContext } = req.body as {
+    word: string
+    context?: string
+    globalContext?: string
+  }
+
+  const contextLine = context ? `\n문맥: "${context}"` : ''
+  const globalLine = globalContext ? `\n지원 배경: ${globalContext}` : ''
+
+  const prompt = `당신은 한국어 자기소개서 전문가입니다.${globalLine}
+아래 단어/표현에 대해 자기소개서에서 활용할 수 있는 다양한 표현들을 JSON으로만 반환하세요.
+
+단어: "${word}"${contextLine}
+
+반환 형식 (JSON만, 다른 텍스트 절대 없이):
+{"word":"원래단어","categories":[{"type":"유의어","items":["단어1","단어2","단어3"]},{"type":"유사 표현","items":["표현1","표현2","표현3"]},{"type":"자기소개서 강화 표현","items":["표현1","표현2","표현3"]},{"type":"반의/대조","items":["단어1","단어2"]}]}
+
+규칙:
+- 각 카테고리 3-5개 항목
+- 자기소개서 문맥에 맞는 표현 우선
+- JSON만 반환, 마크다운 코드블록 없이`
+
+  try {
+    let resultText = ''
+    for await (const message of query({ prompt, options: { allowedTools: [] } })) {
+      if ('result' in message && typeof (message as { result: string }).result === 'string') {
+        resultText = (message as { result: string }).result
+      }
+    }
+    let result = null
+    try {
+      result = JSON.parse(resultText)
+    } catch {
+      const match = resultText.match(/\{[\s\S]*\}/)
+      if (match) {
+        try { result = JSON.parse(match[0]) } catch { /* ignore */ }
+      }
+    }
+    res.json(result ?? { word, categories: [] })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Error' })
+  }
+})
+
 const PORT = 3001
 app.listen(PORT, () => {
   console.log(`✅ 첨삭 서버 실행 중: http://localhost:${PORT}`)

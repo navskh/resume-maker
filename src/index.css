@@ -11,3 +11,12 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
   background: #f8f9fa;
 }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-in {
+  animation: slideIn 0.15s ease-out forwards;
+}

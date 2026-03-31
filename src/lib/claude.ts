@@ -1,4 +1,21 @@
-import type { SkillInfo, Suggestion } from '../types'
+import type { SkillInfo, Suggestion, WordMapResult } from '../types'
+
+export async function fetchWordMap(
+  word: string,
+  context?: string,
+  globalContext?: string,
+): Promise<WordMapResult | null> {
+  try {
+    const res = await fetch('/api/wordmap', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word, context, globalContext }),
+    })
+    return await res.json() as WordMapResult
+  } catch {
+    return null
+  }
+}
 
 export async function fetchSkills(): Promise<SkillInfo[]> {
   try {

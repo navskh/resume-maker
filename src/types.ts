@@ -31,3 +31,13 @@ export interface Suggestion {
   replacement: string;
   reason: string;
 }
+
+export interface WordMapCategory {
+  type: string;
+  items: string[];
+}
+
+export interface WordMapResult {
+  word: string;
+  categories: WordMapCategory[];
+}

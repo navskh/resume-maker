@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import MarkdownReview from './components/MarkdownReview'
 import HighlightedText from './components/HighlightedText'
+import WordMapPopup from './components/WordMapPopup'
 import { v4 as uuidv4 } from 'uuid'
-import { AppState, Question, Version, SkillInfo, Suggestion } from './types'
+import { AppState, Question, Version, SkillInfo, Suggestion, WordMapResult } from './types'
 import { loadState, saveState, loadStateFromServer, saveStateToServer, gitPush } from './lib/storage'
-import { getClaudeReview, fetchSkills, fetchHighlights } from './lib/claude'
+import { getClaudeReview, fetchSkills, fetchHighlights, fetchWordMap } from './lib/claude'
 
 export default function App() {
   const [state, setState] = useState<AppState>(loadState)
@@ -22,6 +23,12 @@ export default function App() {
   const [isLoadingHighlights, setIsLoadingHighlights] = useState(false)
   const [isPushing, setIsPushing] = useState(false)
   const [pushMessage, setPushMessage] = useState('')
+  const [wordMapSelection, setWordMapSelection] = useState<{ start: number; end: number; word: string } | null>(null)
+  const [wordMapResult, setWordMapResult] = useState<WordMapResult | null>(null)
+  const [wordMapLoading, setWordMapLoading] = useState(false)
+  const [wordMapPosition, setWordMapPosition] = useState({ top: 0, left: 0, maxWidth: 400 })
+  const editorRef = useRef<HTMLTextAreaElement>(null)
+  const editorContainerRef = useRef<HTMLDivElement>(null)
 
   const selectedQuestion = state.questions.find(q => q.id === state.selectedQuestionId) ?? null
 
@@ -192,6 +199,49 @@ export default function App() {
     setIsPushing(false)
     setPushMessage(result.message ?? result.error ?? '')
     setTimeout(() => setPushMessage(''), 4000)
+  }
+
+  function handleEditorKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      const textarea = e.currentTarget
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      if (start === end) return
+      const selected = textarea.value.slice(start, end).trim()
+      if (!selected) return
+
+      // Calculate popup position relative to the editor container
+      const containerRect = editorContainerRef.current?.getBoundingClientRect()
+      const textareaRect = textarea.getBoundingClientRect()
+      if (!containerRect) return
+
+      // Position popup just below the top edge of the textarea, inside the container
+      const top = textareaRect.top - containerRect.top + 8
+      const left = textareaRect.left - containerRect.left + 8
+      const maxWidth = Math.min(textareaRect.width - 16, 480)
+
+      setWordMapPosition({ top, left, maxWidth })
+      setWordMapSelection({ start, end, word: selected })
+      setWordMapResult(null)
+      setWordMapLoading(true)
+
+      // Extract surrounding context (±60 chars)
+      const context = textarea.value.slice(Math.max(0, start - 60), end + 60)
+      fetchWordMap(selected, context, state.globalContext).then(result => {
+        setWordMapResult(result)
+        setWordMapLoading(false)
+      })
+    }
+  }
+
+  function applyWordMapSelection(item: string) {
+    if (!wordMapSelection) return
+    const { start, end } = wordMapSelection
+    const before = editorContent.slice(0, start)
+    const after = editorContent.slice(end)
+    setEditorContent(before + item + after)
+    setWordMapSelection(null)
   }
 
   function acceptSuggestion(original: string, replacement: string) {
@@ -414,7 +464,17 @@ export default function App() {
                     </button>
                   </div>
                 )}
-                <div className="flex-1 flex flex-col p-6 overflow-hidden">
+                <div ref={editorContainerRef} className="flex-1 flex flex-col p-6 overflow-hidden relative">
+                  {wordMapSelection && (
+                    <WordMapPopup
+                      word={wordMapSelection.word}
+                      result={wordMapResult}
+                      isLoading={wordMapLoading}
+                      position={wordMapPosition}
+                      onSelect={applyWordMapSelection}
+                      onClose={() => setWordMapSelection(null)}
+                    />
+                  )}
                   {showHighlights ? (
                     isLoadingHighlights ? (
                       <div className="flex-1 flex items-center justify-center bg-white border border-gray-200 rounded-xl">
@@ -432,10 +492,12 @@ export default function App() {
                     )
                   ) : (
                     <textarea
+                      ref={editorRef}
                       className="flex-1 resize-none outline-none text-base leading-relaxed text-gray-800 bg-white border border-gray-200 rounded-xl p-4 shadow-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-50 transition-all"
                       value={editorContent}
                       onChange={e => setEditorContent(e.target.value)}
-                      placeholder="자기소개서 내용을 작성하세요..."
+                      onKeyDown={handleEditorKeyDown}
+                      placeholder="자기소개서 내용을 작성하세요... (단어 선택 후 ⌘+Enter로 유의어 검색)"
                     />
                   )}
                   {/* Character Count */}
