@@ -21,6 +21,7 @@ export default function App() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [showHighlights, setShowHighlights] = useState(false)
   const [isLoadingHighlights, setIsLoadingHighlights] = useState(false)
+  const [showReviewPanel, setShowReviewPanel] = useState(false)
   const [isPushing, setIsPushing] = useState(false)
   const [pushMessage, setPushMessage] = useState('')
   const [wordMapSelection, setWordMapSelection] = useState<{ start: number; end: number; word: string } | null>(null)
@@ -42,6 +43,7 @@ export default function App() {
     }
     setReviewText('')
     setReviewError('')
+    setShowReviewPanel(false)
     setSuggestions([])
     setShowHighlights(false)
   }, [state.selectedQuestionId])
@@ -166,6 +168,7 @@ export default function App() {
   async function handleReview() {
     if (!selectedQuestion || !editorContent.trim()) return
     setIsReviewing(true)
+    setShowReviewPanel(true)
     setReviewText('')
     setReviewError('')
     await getClaudeReview(
@@ -420,11 +423,18 @@ export default function App() {
                     ))}
                   </select>
                   <button
-                    onClick={handleReview}
+                    onClick={() => reviewText ? setShowReviewPanel(v => !v) : handleReview()}
                     disabled={isReviewing || !editorContent.trim()}
-                    className="px-4 py-1.5 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className={`relative px-4 py-1.5 text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                      showReviewPanel && reviewText
+                        ? 'text-purple-700 bg-purple-100 border border-purple-300'
+                        : 'text-white bg-purple-600 hover:bg-purple-700'
+                    }`}
                   >
                     {isReviewing ? '첨삭 중...' : '✨ 첨삭'}
+                    {reviewText && !isReviewing && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-purple-400 rounded-full" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -563,7 +573,7 @@ export default function App() {
               )}
 
               {/* Claude Review Panel */}
-              {(reviewText || isReviewing || reviewError) && (
+              {showReviewPanel && (reviewText || isReviewing || reviewError) && (
                 <div className="w-96 border-l border-gray-200 bg-white flex flex-col overflow-hidden">
                   <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                     <span className="font-medium text-sm flex items-center gap-2">
@@ -576,7 +586,7 @@ export default function App() {
                       {isReviewing && <span className="text-xs text-gray-400 animate-pulse">생성 중...</span>}
                     </span>
                     <button
-                      onClick={() => { setReviewText(''); setReviewError('') }}
+                      onClick={() => setShowReviewPanel(false)}
                       className="text-gray-400 hover:text-gray-600"
                     >
                       ✕
