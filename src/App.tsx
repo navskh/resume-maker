@@ -22,6 +22,7 @@ export default function App() {
   const [showHighlights, setShowHighlights] = useState(false)
   const [isLoadingHighlights, setIsLoadingHighlights] = useState(false)
   const [showReviewPanel, setShowReviewPanel] = useState(false)
+  const [reviewFeedback, setReviewFeedback] = useState('')
   const [isPushing, setIsPushing] = useState(false)
   const [pushMessage, setPushMessage] = useState('')
   const [wordMapSelection, setWordMapSelection] = useState<{ start: number; end: number; word: string } | null>(null)
@@ -43,6 +44,7 @@ export default function App() {
     }
     setReviewText('')
     setReviewError('')
+    setReviewFeedback('')
     setShowReviewPanel(false)
     setSuggestions([])
     setShowHighlights(false)
@@ -165,7 +167,7 @@ export default function App() {
     }))
   }
 
-  async function handleReview() {
+  async function handleReview(feedback?: string, previousReview?: string) {
     if (!selectedQuestion || !editorContent.trim()) return
     setIsReviewing(true)
     setShowReviewPanel(true)
@@ -176,12 +178,11 @@ export default function App() {
       editorContent,
       selectedSkillId,
       (chunk) => setReviewText(prev => prev + chunk),
-      () => setIsReviewing(false),
-      (err) => {
-        setReviewError(err)
-        setIsReviewing(false)
-      },
+      () => { setIsReviewing(false); setReviewFeedback('') },
+      (err) => { setReviewError(err); setIsReviewing(false) },
       state.globalContext,
+      feedback,
+      previousReview,
     )
   }
 
@@ -589,7 +590,7 @@ export default function App() {
                     <div className="flex items-center gap-2">
                       {!isReviewing && reviewText && (
                         <button
-                          onClick={handleReview}
+                          onClick={() => handleReview(reviewFeedback, reviewText)}
                           className="text-xs text-purple-500 hover:text-purple-700 border border-purple-200 hover:border-purple-400 px-2 py-0.5 rounded-md transition-colors"
                         >
                           ↺ 다시 첨삭
@@ -613,6 +614,31 @@ export default function App() {
                       <MarkdownReview content={reviewText} isStreaming={isReviewing} />
                     )}
                   </div>
+                  {/* Feedback input */}
+                  {!isReviewing && reviewText && (
+                    <div className="border-t border-gray-100 p-3 space-y-2">
+                      <textarea
+                        className="w-full text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded-lg p-2.5 resize-none outline-none focus:border-purple-300 focus:ring-1 focus:ring-purple-100 transition-all"
+                        rows={2}
+                        value={reviewFeedback}
+                        onChange={e => setReviewFeedback(e.target.value)}
+                        placeholder="피드백을 입력하세요&#10;예: 더 간결하게, 수치를 강조해줘, 스토리텔링 방식으로..."
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && reviewFeedback.trim()) {
+                            e.preventDefault()
+                            handleReview(reviewFeedback, reviewText)
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={() => handleReview(reviewFeedback, reviewText)}
+                        disabled={!reviewFeedback.trim()}
+                        className="w-full py-1.5 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        ↩ 피드백 반영해서 재첨삭 <span className="text-purple-400 ml-1">⌘↵</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

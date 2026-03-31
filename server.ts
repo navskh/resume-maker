@@ -52,11 +52,13 @@ app.get('/api/skills', (_req, res) => {
 })
 
 app.post('/api/review', async (req: express.Request, res: express.Response) => {
-  const { question, content, skillId, globalContext } = req.body as {
+  const { question, content, skillId, globalContext, feedback, previousReview } = req.body as {
     question: string
     content: string
     skillId?: string
     globalContext?: string
+    feedback?: string
+    previousReview?: string
   }
 
   const skill = getSkill(skillId ?? 'general')
@@ -65,7 +67,10 @@ app.post('/api/review', async (req: express.Request, res: express.Response) => {
   res.setHeader('Cache-Control', 'no-cache')
   res.setHeader('Connection', 'keep-alive')
 
-  const prompt = skill.promptTemplate(question, content, globalContext)
+  const contextLine = globalContext ? `\n**지원 배경/컨텍스트**: ${globalContext}\n` : ''
+  const prompt = (feedback && previousReview)
+    ? `**문항**: ${question}${contextLine}\n\n**원문**:\n${content}\n\n**이전 첨삭 결과**:\n${previousReview}\n\n**사용자 피드백**:\n${feedback}\n\n위 피드백을 반영하여 재첨삭해주세요. 피드백에서 언급한 방향을 중점적으로 반영하되, 전체적인 첨삭 형식은 유지해주세요.`
+    : skill.promptTemplate(question, content, globalContext)
 
   try {
     let resultText = ''
