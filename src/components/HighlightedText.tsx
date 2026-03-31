@@ -31,20 +31,18 @@ function HighlightSpan({ text, suggestion, onAccept }: {
 }) {
   const [show, setShow] = useState(false)
   return (
-    <span className="relative inline">
-      <mark
-        className="bg-amber-100 border-b-2 border-amber-400 cursor-pointer rounded-sm px-0.5 hover:bg-amber-200 transition-colors"
-        onMouseEnter={() => setShow(true)}
-        onMouseLeave={() => setShow(false)}
-      >
+    <span
+      className="relative inline"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <mark className="bg-amber-100 border-b-2 border-amber-400 cursor-pointer rounded-sm px-0.5 hover:bg-amber-200 transition-colors">
         {text}
       </mark>
       {show && (
         <span
           className="absolute bottom-full left-0 z-50 w-64 bg-gray-900 text-white text-xs rounded-xl p-3 shadow-xl"
-          style={{ transform: 'translateY(-4px)' }}
-          onMouseEnter={() => setShow(true)}
-          onMouseLeave={() => setShow(false)}
+          style={{ marginBottom: '4px' }}
         >
           <div className="text-amber-400 font-medium mb-1.5">{suggestion.reason}</div>
           <div className="text-gray-400 line-through mb-1 text-xs">{suggestion.original}</div>

@@ -14,7 +14,7 @@ interface Props {
   word: string
   result: WordMapResult | null
   isLoading: boolean
-  position: { top: number; left: number; maxWidth: number }
+  position: { top: number; left: number; maxWidth: number; useFixed?: boolean }
   onSelect: (item: string) => void
   onClose: () => void
 }
@@ -40,7 +40,7 @@ export default function WordMapPopup({ word, result, isLoading, position, onSele
   return (
     <div
       ref={popupRef}
-      className="absolute z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in"
+      className="fixed z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in"
       style={{
         top: position.top,
         left: position.left,

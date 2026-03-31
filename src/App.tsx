@@ -214,15 +214,16 @@ export default function App() {
       const selected = textarea.value.slice(start, end).trim()
       if (!selected) return
 
-      // Calculate popup position relative to the editor container
-      const containerRect = editorContainerRef.current?.getBoundingClientRect()
+      // Calculate popup position using viewport coordinates (fixed positioning)
       const textareaRect = textarea.getBoundingClientRect()
-      if (!containerRect) return
-
-      // Position popup just below the top edge of the textarea, inside the container
-      const top = textareaRect.top - containerRect.top + 8
-      const left = textareaRect.left - containerRect.left + 8
-      const maxWidth = Math.min(textareaRect.width - 16, 480)
+      const popupWidth = Math.min(textareaRect.width * 0.6, 480)
+      const left = textareaRect.left + (textareaRect.width - popupWidth) / 2
+      // Show below textarea top + some offset, but ensure it doesn't go off-screen bottom
+      const spaceBelow = window.innerHeight - textareaRect.top - 60
+      const top = spaceBelow > 300
+        ? textareaRect.top + 60
+        : textareaRect.top - 320
+      const maxWidth = popupWidth
 
       setWordMapPosition({ top, left, maxWidth })
       setWordMapSelection({ start, end, word: selected })
@@ -474,7 +475,7 @@ export default function App() {
                     </button>
                   </div>
                 )}
-                <div ref={editorContainerRef} className="flex-1 flex flex-col p-6 overflow-hidden relative">
+                <div ref={editorContainerRef} className="flex-1 flex flex-col p-6 overflow-hidden">
                   {wordMapSelection && (
                     <WordMapPopup
                       word={wordMapSelection.word}
