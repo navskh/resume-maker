@@ -52,13 +52,14 @@ app.get('/api/skills', (_req, res) => {
 })
 
 app.post('/api/review', async (req: express.Request, res: express.Response) => {
-  const { question, content, skillId, globalContext, feedback, previousReview } = req.body as {
+  const { question, content, skillId, globalContext, feedback, previousReview, problemContext } = req.body as {
     question: string
     content: string
     skillId?: string
     globalContext?: string
     feedback?: string
     previousReview?: string
+    problemContext?: string
   }
 
   const skill = getSkill(skillId ?? 'general')
@@ -68,9 +69,10 @@ app.post('/api/review', async (req: express.Request, res: express.Response) => {
   res.setHeader('Connection', 'keep-alive')
 
   const contextLine = globalContext ? `\n**지원 배경/컨텍스트**: ${globalContext}\n` : ''
+  const problemLine = problemContext ? `\n**특별히 집중해야 할 부분**: ${problemContext}\n` : ''
   const prompt = (feedback && previousReview)
-    ? `**문항**: ${question}${contextLine}\n\n**원문**:\n${content}\n\n**이전 첨삭 결과**:\n${previousReview}\n\n**사용자 피드백**:\n${feedback}\n\n위 피드백을 반영하여 재첨삭해주세요. 피드백에서 언급한 방향을 중점적으로 반영하되, 전체적인 첨삭 형식은 유지해주세요.`
-    : skill.promptTemplate(question, content, globalContext)
+    ? `**문항**: ${question}${contextLine}${problemLine}\n\n**원문**:\n${content}\n\n**이전 첨삭 결과**:\n${previousReview}\n\n**사용자 피드백**:\n${feedback}\n\n위 피드백을 반영하여 재첨삭해주세요. 피드백에서 언급한 방향을 중점적으로 반영하되, 전체적인 첨삭 형식은 유지해주세요.`
+    : skill.promptTemplate(question, content, globalContext) + problemLine + (problemContext ? '\n위 집중 포인트를 특히 신경써서 첨삭해주세요.' : '')
 
   try {
     let resultText = ''

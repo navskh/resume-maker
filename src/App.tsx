@@ -23,6 +23,7 @@ export default function App() {
   const [isLoadingHighlights, setIsLoadingHighlights] = useState(false)
   const [showReviewPanel, setShowReviewPanel] = useState(false)
   const [reviewFeedback, setReviewFeedback] = useState('')
+  const [reviewProblemContext, setReviewProblemContext] = useState('')
   const [isPushing, setIsPushing] = useState(false)
   const [pushMessage, setPushMessage] = useState('')
   const [wordMapSelection, setWordMapSelection] = useState<{ start: number; end: number; word: string } | null>(null)
@@ -183,6 +184,7 @@ export default function App() {
       state.globalContext,
       feedback,
       previousReview,
+      reviewProblemContext,
     )
   }
 
@@ -412,8 +414,21 @@ export default function App() {
                 >
                   💾 저장
                 </button>
-                {/* Skill select + review button */}
-                <div className="flex items-center gap-1">
+                {/* Problem context + Skill select + review button */}
+                <div className="flex items-center gap-1 flex-1 min-w-0">
+                  <input
+                    type="text"
+                    value={reviewProblemContext}
+                    onChange={e => setReviewProblemContext(e.target.value)}
+                    disabled={isReviewing}
+                    placeholder="어떤 부분이 문제인가요? (선택)"
+                    className="flex-1 min-w-0 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-purple-300 focus:bg-white transition-all placeholder:text-gray-400 disabled:opacity-50"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !isReviewing && editorContent.trim()) {
+                        reviewText ? setShowReviewPanel(v => !v) : handleReview()
+                      }
+                    }}
+                  />
                   <select
                     value={selectedSkillId}
                     onChange={e => setSelectedSkillId(e.target.value)}

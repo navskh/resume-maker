@@ -53,12 +53,13 @@ export async function getClaudeReview(
   globalContext?: string,
   feedback?: string,
   previousReview?: string,
+  problemContext?: string,
 ) {
   try {
     const res = await fetch('/api/review', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, content, skillId, globalContext, feedback, previousReview }),
+      body: JSON.stringify({ question, content, skillId, globalContext, feedback, previousReview, problemContext }),
     })
 
     const reader = res.body!.getReader()
