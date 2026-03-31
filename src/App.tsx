@@ -585,12 +585,22 @@ export default function App() {
                       )}
                       {isReviewing && <span className="text-xs text-gray-400 animate-pulse">생성 중...</span>}
                     </span>
-                    <button
-                      onClick={() => setShowReviewPanel(false)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      ✕
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {!isReviewing && reviewText && (
+                        <button
+                          onClick={handleReview}
+                          className="text-xs text-purple-500 hover:text-purple-700 border border-purple-200 hover:border-purple-400 px-2 py-0.5 rounded-md transition-colors"
+                        >
+                          ↺ 다시 첨삭
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setShowReviewPanel(false)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
                   <div className="flex-1 overflow-y-auto p-4">
                     {reviewError ? (
